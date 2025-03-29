@@ -4,13 +4,12 @@ import requests
 from bs4 import BeautifulSoup
 import ollama
 import json
+import os
+from dotenv import load_dotenv
 
-eden = True
+load_dotenv()
+
 messages = []
-
-
-
-    
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -31,8 +30,9 @@ def home():
     return render_template('chat.html')
 
 def ask_gpt(message):
+    eden = os.getenv('EDEN')
     headers = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTc5NTJlN2MtNTE1MC00MTJhLTg4MjktNGE1YjQ0ODUzZTc2IiwidHlwZSI6ImFwaV90b2tlbiJ9.P3D906SbibDIxo9ZCFVXpAO391pS5Y9fQk-AiHWGT9I",
+        "Authorization": "Bearer {eden}",
     }
 
     url = "https://api.edenai.run/v2/text/chat/stream"
