@@ -1,0 +1,463 @@
+
+
+function getLeadsFormFields(formId,listSelect) {
+	var formFieldArray = new Array();
+	var selectedValues = listSelect.indexOf(',') > -1 ? listSelect.split(",") : listSelect;
+	$(formId + ' #leadsFormFieldsContainer .form-row').each(function (e) {
+		var formField = new Object();
+		formField.fieldId = $(this).find('.form-control').attr('id');
+		formField.fieldLanguageProperty = "form.leads.preferences.option."+formField.fieldId;
+		formField.fieldLanguagePropertyTranslated= $(this).find('.input-label').text();
+		var index = selectedValues.indexOf(formField.fieldId);
+		formField.fieldPosition = index >= 0 ? index : -1;
+		formField.fieldVisibility = $(this).find('input[name="visibilityFieldOption'+formField.fieldId+'"]:checked').val();
+		formField.fieldValue = $(formId+' #'+formField.fieldId).val();
+		formField.fieldType = $(formId+' #'+formField.fieldId).attr("type");
+		formField.fieldPlaceholder = "form.leads.preferences.option."+formField.fieldId+".placeholder";
+		formField.fieldRestrictions = $(formId+' #'+formField.fieldId).attr("data-restrictions");
+		formField.fieldDataErrorMessage = $(formId+' #'+formField.fieldId).attr("data-error-message");
+		formFieldArray.push(formField);
+	});
+
+	formFieldArray.sort((a, b) => a.fieldPosition - b.fieldPosition);
+
+	return(formFieldArray);
+}
+
+function setLeadsFormFields(formId, fieldsRecoveredData) {
+	var fieldsRecoveredDataObject = JSON.parse(fieldsRecoveredData);
+
+	/*Pintamos los liferay input boxes en funcion de las preferencias*/
+	setFieldsMoveBox(formId, fieldsRecoveredDataObject);
+	
+	$(formId+' #leadsFormFieldsContainer .form-row').each(function () {
+		
+		fieldId = $(this).find('.form-control').attr('id');
+		
+		/*Recuperamos el objeto de las preferencias correspondiente al input*/
+		let obj = fieldsRecoveredDataObject.filter(item => item.fieldId === fieldId);
+		
+		/*Asiganmos el valor de los radiobutton y de los inputs de texto*/
+		if(obj[0].fieldVisibility && obj[0].fieldVisibility.length>0){
+			$(this).find('#'+ obj[0].fieldVisibility + obj[0].fieldId).attr('checked', 'checked');
+		}
+		else{
+			$(this).find('#prefixed'+ obj[0].fieldId).attr('checked', 'checked');
+		}
+		
+		$('#'+fieldId).val(obj[0].fieldValue);
+    });
+	
+}
+
+function setFieldsMoveBox(formId, fieldsRecoveredDataObject){
+    fieldsRecoveredDataObject.forEach( function(item, indice, array) {
+        var op = document.createElement("option");
+        op.setAttribute("value", item.fieldId);
+        op.setAttribute("data-selected", "true");
+        op.innerHTML = item.fieldLanguagePropertyTranslated;
+
+        if(item.fieldPosition < 0 ){
+            document.querySelector('[id$="leftBox"]').append(op);
+        }
+        else{
+            document.querySelector('[id$="rightBox"]').append(op);
+        }
+    });
+}
+
+
+function setRamosVisibles(ramos, ramosVisiblesData){
+    for (var [key, value] of ramos) {
+        var op = document.createElement("option");
+        op.setAttribute("value", key);
+        op.setAttribute("data-selected", "true");
+        op.innerHTML = value;
+
+        if(ramosVisiblesData != null && ramosVisiblesData.length >0 && ramosVisiblesData.includes(Number(key))){
+            document.querySelector('[id$="rightBoxRamo"]').append(op);
+        } else {
+            document.querySelector('[id$="leftBoxRamo"]').append(op);
+        }
+    }
+}
+
+function ramosVisiblesToArray(ramosVisiblesData){
+    ramosVisiblesData = ramosVisiblesData.split(',');
+    let ramosVisiblesArr = new Array();
+    for(ramoVisible of ramosVisiblesData){
+        ramosVisiblesArr.push(Number(ramoVisible));
+    }
+    return ramosVisiblesArr;
+}
+
+function getRamoMapFromString(ramos){
+    ramos = ramos.replace(/[{}]/g, "");
+    ramos = ramos.split(',');
+    var ramosMap = new Map();
+
+    for(ramo of ramos){
+        ramosMap.set(ramo.split('=')[1], ramo.split('=')[0]);
+    }
+    return ramosMap;
+}
+
+function updateRamosVisibles(){
+    var listaRamos = document.querySelector('[id$="rightBoxRamo"]').children;
+    var listaRamosUpdate = new Array();
+    if(listaRamos != null && listaRamos.length > 0){
+        for (ramo of listaRamos){
+            listaRamosUpdate.push(ramo.value);
+        }
+    } else {
+        listaRamosUpdate = null;
+    }
+    return listaRamosUpdate;
+}
+
+function addRamosVisibles(listaRamos, listaRamosVisibles){
+    listaRamosVisibles = listaRamosVisibles.split(',');
+    let ramosMap = getRamoMapFromString(listaRamos);
+    for (let [clave, valor] of ramosMap) {
+        for(ramoVisible of listaRamosVisibles){
+            if (clave == ramoVisible) {
+                var option = document.createElement("option");
+                option.value = clave;
+                option.text = valor;
+                document.getElementById("ramo").appendChild(option);
+            }
+        }
+    };
+}
+
+/*Añadimos escuchador para actuar sobre el input asociado a los radio button*/
+function addOnChangeEventRadioButtons(){
+$('#leadsFormFieldsContainer .form-check-inline').change(function() {
+		
+		/*En funcion de la opcion que seleccione el usuario*/
+		let radioSelected = $(this).find('input[name^="visibilityFieldOption"]:checked').val();
+		
+		let idInputRadioRelated = $(this).find('input[name^="visibilityFieldOption"]:checked').attr('id').split(radioSelected)[1];
+		
+		/*Si la opcion seleccionada es visible, vaciamos el input y lo deshabilitamos. Lo habilitamos en cualquier otro caso*/
+		if(radioSelected==='visible'){
+			$('#'+idInputRadioRelated).val("");
+			$('#'+idInputRadioRelated).attr("disabled", true);
+		}
+		else{
+			$('#'+idInputRadioRelated).removeAttr("disabled");
+		}	
+		
+	});
+}
+
+/*Validar CIF*/
+function validateCIF(cif){
+    var expRegularCif =  /^[ABCDEFGHPQS]{1}\d{7}[0-9A-J]$/;
+
+    if (!expRegularCif.test(cif)){
+        console.log("err");
+        return false;
+    }
+
+    var suma = 0;
+
+    //Se suman las cifras pares
+    for (var i = 2; i<=6; i += 2){
+        suma += parseInt(cif.charAt(i));
+    }
+
+    //Se multiplican por 2 las cifras impares y se suman las cifras del resultado (6*2 = 12 -> 1+2 = 3)
+    var calculo = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9];
+    var sumaImpares = 0;
+    for (var i = 1; i <= 7; i += 2){
+        var digito = parseInt(cif.charAt(i));
+        sumaImpares += calculo[digito];
+    }
+
+    //Se suman ambas
+    suma += sumaImpares
+
+    //Se le resta a 10 las unidades de la suma
+    var auxCodControl = 10 - (suma % 10);
+    var codControl;
+
+    //Conseguimos el codigo de control
+    if (auxCodControl === 10){
+        codControl = 0;
+    }else {
+        codControl = auxCodControl;
+    }
+
+    var ascii = 'JABCDEFGHI';
+    var letraControl = ascii.charAt(codControl);
+
+    if (parseInt(cif.charAt(cif.length-1)) === codControl | cif.charAt(cif.length-1) === letraControl) {
+        return true;
+    }
+    return false;
+}
+
+/*Validar DNI/NIE*/
+function validateDNI(dni) {
+    var numero, letr, letra;
+    var expresion_regular_dni = /^[XYZ]?\d{5,8}[A-Z]$/;
+    dni = dni.toUpperCase();
+
+    if(expresion_regular_dni.test(dni) === true){
+        numero = dni.substr(0,dni.length-1);
+        numero = numero.replace('X', 0);
+        numero = numero.replace('Y', 1);
+        numero = numero.replace('Z', 2);
+        letr = dni.substr(dni.length-1, 1);
+        numero = numero % 23;
+        letra = 'TRWAGMYFPDXBNJZSQVHLCKET';
+        letra = letra.substring(numero, numero+1);
+        if (letra != letr) {
+            return false;
+        }else{
+            return true;
+        }
+    }else{
+        return false;
+    }
+
+}
+
+function validateDNIorCIF(doc) {
+    if (validateDNI(doc) | validateCIF(doc)){
+        return true;
+    }
+    return false;
+}
+
+function preventEnterSubmit(formId){
+	$(document).on("keypress", formId+' input[type=text]', function (e) {
+		   var code = e.keyCode || e.which;
+		   if (code == 13) {
+		       e.preventDefault();
+		       return false;
+		   }
+		});
+}
+
+function sendLeadsForm(formId, urlValidateForm, captchaSiteKey){
+	grecaptcha.ready(function() {
+		grecaptcha.execute(captchaSiteKey, {action:'action_name'}).then(function(token) {
+	  		$(formId+ ' .captcha-token').val(token);
+	  		formBackValidate(formId, urlValidateForm);
+	  	});
+	});
+	/* El usuario ha pasado la validacion front, hacemos la validación back */
+
+
+}
+
+
+function formBackValidate(formId, urlValidateForm){
+	var formFieldsObject = new Object();
+	formFieldsObject.phone = $(formId+ ' #phone').val();
+	formFieldsObject.email = $(formId+ ' #email').val();
+	formFieldsObject.name = $(formId+ ' #name').val();
+	formFieldsObject.postalCode = $(formId+ ' #postalCode').val();
+	formFieldsObject.idCard = $(formId+ ' #idCard').val();
+	formFieldsObject.schedule = $(formId+ ' #schedule').val();
+	formFieldsObject.description = $(formId+ ' #description').val();
+	formFieldsObject.nameAndLastname = $(formId+ ' #nameAndLastname').val();
+	formFieldsObject.surname = $(formId+ ' #surname').val();
+	formFieldsObject.secondSurname = $(formId+ ' #secondSurname').val();
+	formFieldsObject.ramo = $(formId+ ' #ramo').val();
+	var fieldsDataString=JSON.stringify(formFieldsObject);
+	var captchaToken = $(formId+' .captcha-token').val();
+	var urlOriginParameters = document.getElementById("urlOriginParameters").value;
+
+	$.ajax({
+		dataType : 'json',
+		type : 'POST',
+		data : {"formFields":fieldsDataString,"captcha":captchaToken,"urlOriginParameters":urlOriginParameters},
+		url : urlValidateForm,
+		success : function(data) {
+		    let content =  document.getElementById("contentGDPR");
+			content.innerHTML = data.html;
+			$('.form-control').removeClass('is-invalid');
+			/*Pintamos los errores devueltos en la validacion server side*/
+			if(data.validFormList.length>0 || !data.validCaptcha){
+				data.validFormList.forEach( function(item, indice, array) {
+					$(formId+ ' #'+item.fieldName).addClass("is-invalid");
+
+					event.preventDefault();
+					event.stopPropagation();
+
+				});
+				if(data.validCaptcha){
+					$(formId+" .land__show-gpdr").modaal({
+                        content_source: formId+' .land__gpdr-form-modal'
+                    });
+
+                    $(formId+" .land__show-gpdr").trigger("click");
+				}
+
+
+			}
+			//En este caso no hay errores y mostramos la modal de proteccion de datos
+			else{
+        	  $(formId+" .land__show-gpdr").modaal({
+				    content_source: formId+' .land__gpdr-form-modal'
+				});
+
+				$(formId+" .land__show-gpdr").trigger("click");
+
+				let dataCustomProperties = document.querySelector(formId + "_custom-analytics-properties") !== null ?
+					document.querySelector(formId + "_custom-analytics-properties").getAttribute("data-custom-properties")
+					: "";
+
+				// Enviamos el evento "modal_view" para analítica
+				PublicPortalsAnalyticsFactory
+					.getInstance()
+					.publicPortalsAnalyticsModalViewInstance()
+					.customProperties(dataCustomProperties)
+					.push();
+			}
+
+		},
+		error : function(jqXHR, status, errorThrown) {
+			console.log("Error al validar el formulario");
+		}
+	});
+}
+
+
+function addEventSubmit(formClientId, validateFormUrl, captchaSiteKey){
+	var fId = formClientId.slice(1);
+	var form = document.getElementById(fId);
+    	form.addEventListener('submit', function(event) {
+		let dataCustomProperties = form.querySelector(formClientId + "_custom-analytics-properties").getAttribute("data-custom-properties");
+
+        if (form.checkValidity() === false) {
+
+			let elementosErrores = form.querySelectorAll("[data-elemento-interaccion]");
+
+			let errores = Array.from(elementosErrores)
+				.filter(element => element.classList.contains("is-invalid")) // Filtramos sólo elementos que sean inválidos
+				.map(element => element.getAttribute("data-elemento-interaccion"))
+
+			errores.forEach(error => {
+				PublicPortalsAnalyticsFactory
+					.getInstance()
+					.publicPortalsAnalyticsNavErrorInstance()
+					.elemento_interaccion(error)
+					.categoria_interaccion("registro")
+					.detalle_interaccion("envio_formulario")
+					.customProperties(dataCustomProperties)
+					.push();
+			})
+
+			let select = form.querySelector("select");
+
+			if (select !== null && select.value === "") {
+
+				let error = select.hasAttribute("data-elemento-interaccion") ? select.getAttribute("data-elemento-interaccion") : "";
+
+				PublicPortalsAnalyticsFactory
+					.getInstance()
+					.publicPortalsAnalyticsNavErrorInstance()
+					.elemento_interaccion(error)
+					.categoria_interaccion("registro")
+					.detalle_interaccion("envio_formulario")
+					.customProperties(dataCustomProperties)
+					.push();
+			}
+
+          	event.preventDefault();
+          	event.stopPropagation();
+        } else {
+        	event.preventDefault();
+          	event.stopPropagation();
+
+			let buttonSubmit = form.querySelector(".accept-button-analitics") ? form.querySelector(".accept-button-analitics").innerText : "";
+
+			PublicPortalsAnalyticsFactory
+				.getInstance()
+				.publicPortalsAnalyticsInteractionInstance()
+				.accion_evento("click boton")
+				.elemento_interaccion(buttonSubmit)
+				.categoria_interaccion("cta")
+				.detalle_interaccion("clic_en_boton")
+				.customProperties(dataCustomProperties)
+				.push();
+
+        	sendLeadsForm(formClientId,validateFormUrl, captchaSiteKey);
+        }
+        form.classList.add('was-validated');
+      }, false);
+
+}
+
+function addEventButtonGdpr(formId, namespace) {
+	// Comprobamos las respuesta a la aceptacion del usuario de la RGPD antes de enviar el form
+    let acceptTerms = $(".modaal-content-container #policy-communication").is(':checked') ? true : false;
+    let mailCommunication = $(".modaal-content-container #mail-communication").is(':checked') ? true : false;
+    let emailCommunication = $(".modaal-content-container #email-communication").is(':checked') ? true : false;
+    let anotherCommunication = $(".modaal-content-container #another-communication").is(':checked') ? true : false;
+    if (acceptTerms === true) {
+
+		let buttonSubmit = document.querySelector(".accept-button-analitics-gdpr") ? document.querySelector(".accept-button-analitics-gdpr").innerText : "";
+		let dataCustomProperties = document.querySelector(".accept-button-analitics-gdpr") ? document.querySelector(".accept-button-analitics-gdpr").getAttribute("data-custom-properties") : "";
+
+    	PublicPortalsAnalyticsFactory
+			.getInstance()
+			.publicPortalsAnalyticsInteractionInstance()
+			.accion_evento("envio formulario")
+			.elemento_interaccion(buttonSubmit)
+			.categoria_interaccion("registro")
+			.detalle_interaccion("envio_formulario")
+			.customProperties(dataCustomProperties)
+			.push();
+
+        // Seteamos el valor de los hidden para poder enviar los datos de la RGPD
+        $('#'+namespace+'policy-communication').val(acceptTerms);
+        $('#'+namespace+'mail-communication').val(mailCommunication);
+        $('#'+namespace+'email-communication').val(emailCommunication);
+        $('#'+namespace+'another-communication').val(anotherCommunication);
+        $('.land_btn-gdpr').prop('disabled', true);
+        $(formId).submit();
+    }
+}
+
+
+
+function addDniValidateEvent(dniError, formClientId){
+
+	if($(formClientId+ ' #idCard')){
+
+		$(formClientId+ ' #idCard').bind('input', function() {
+		    var to_confirm = $(this);
+		    var dniOk = validateDNIorCIF(to_confirm.val());
+		    if(dniOk==false){
+		        this.setCustomValidity(dniError);
+		    }
+		    else{
+		        this.setCustomValidity('');
+		    }
+		});
+	}
+}
+
+function addEventValid(){
+
+	 $(document).bind('change', function(e){
+			
+			if( $(e.target).is(':invalid') ){
+			    $(e.target).addClass('is-invalid');
+			} else {
+			    $(e.target).removeClass('is-invalid');
+			}
+		}); 
+		$("form input").on("invalid", function(event) {
+			$(event.target).addClass('is-invalid');
+		});
+}
+
+
+
+

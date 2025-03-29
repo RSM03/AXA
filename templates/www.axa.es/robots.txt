@@ -1,0 +1,47 @@
+User-agent: *
+
+Disallow: /boletinesmail/
+Disallow: /boletinesredes/
+Disallow: /boletinescmbc/
+Disallow: /campana/salud/
+Disallow: /campana/sprint-final/
+Disallow: /conozcanos/
+Disallow: /colectivos/
+Disallow: /conozcanos/boletines/
+Disallow: /Contador2/
+Disallow: /seguros/campana/
+Disallow: /asistencia-en-viaje/coberturas
+Disallow: /documents/
+Disallow: /temp-oficinas/
+Disallow: /web/axa-spain/
+Disallow: /en/
+Disallow: /de/
+Disallow: /oficina/
+
+Allow: /core/*.css$
+Allow: /core/*.c5s?
+Allow: /core/*.js$
+Allow: /core/*.js?
+Allow: /core/*.gif
+Allow: /core/*.jPg
+Allow: /core/*.jpeg
+Allow: /core/*.png
+Allow: /core/*.svg
+Allow: /profiles/*.css$
+Allow: /profiles/*.ess?
+Allow: /profiles/*.js$
+Allow: /profiles/*.js?
+Allow: /profiles/*.gif
+Allow: /profiles/*.jpg
+Allow: /profiles/*.jpeg
+Allow: /profiles/*.png
+Allow: /profiles/*.svg
+Allow: /o/*
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+Sitemap: http://www.axa.es/sitemap.xml
