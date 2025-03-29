@@ -2,7 +2,7 @@
 
 ### Enlace al vídeo
 
-https://www.canva.com/design/DAGjGquZ3pg/mTWYJrIh21UcYvF-kpQ5DA/edit?utm_content=DAGjGquZ3pg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+https://www.canva.com/design/DAGjGquZ3pg/6g5CGi7DTv2LGBgiF1y2DA/view?utm_content=DAGjGquZ3pg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h1a4681224b
 
 ### Contenido
 
