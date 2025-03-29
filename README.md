@@ -1,4 +1,4 @@
-**# Serena AI**
+# **Serena AI**
 
 Nuestro proyecto consiste en un Chatbot Dual con Inteligencia Artificial que combina asesoramiento personalizado y predicción climática para mejorar la experiencia aseguradora.
 
