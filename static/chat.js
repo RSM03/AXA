@@ -10,25 +10,43 @@ function addMessage(message, isUser) {
     messageElement.classList.add(isUser ? 'user-message' : 'bot-message');
     
     const messageText = document.createElement('span');
-    message = message.replace(/\n/g, '<br>');
-    message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Formateamos el mensaje siempre
+    message = formatMessage(message);
     messageText.innerHTML = message;
     messageElement.appendChild(messageText);
 
     chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    return messageText; // Devuelve el span para poder actualizarlo con streaming
+    return messageText;
+}
+
+// Función para el formateo
+function formatMessage(text) {
+    // Reemplazar saltos de línea
+    text = text.replace(/\n/g, '<br>');
+    // Reemplazar texto en negrita
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Cursiva
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Código inline
+    text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    return text;
 }
 
 function handleUserInput() {
+    const userInput = document.getElementById('user-input');
     const message = userInput.value.trim();
     if (!message) return;
 
     // Agrega el mensaje del usuario
     addMessage(message, true);
+    userInput.value = ''; // Limpiar el input
 
-    const botMessageText = addMessage("...", false); // Mensaje vacío que se llenará con el stream
+    const botMessageText = addMessage("...", false); // Mensaje inicial
+    let accumulatedMessage = "";
 
     fetch('http://127.0.0.1:5000/response', {
         method: 'POST',
@@ -38,7 +56,6 @@ function handleUserInput() {
     .then(response => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let partialMessage = "";
 
         function readStream() {
             reader.read().then(({ done, value }) => {
@@ -50,17 +67,15 @@ function handleUserInput() {
                 // Procesa cada línea del chunk
                 const lines = chunk.split('\n');
                 for (const line of lines) {
-                    // Si la línea comienza con "data: ", extraemos solo el contenido
                     if (line.startsWith('data: ')) {
-                        partialMessage += line.substring(6); // Quitamos "data: "
+                        accumulatedMessage += line.substring(6); // Quitamos "data: "
                     } else if (line.trim()) {
-                        // Si no es un evento data pero tiene contenido, lo añadimos también
-                        partialMessage += line;
+                        accumulatedMessage += line;
                     }
                 }
 
-                // Actualiza el mensaje en la UI
-                botMessageText.innerHTML = partialMessage.replace(/\n/g, '<br>');
+                // Aplicamos el formateo en cada actualización
+                botMessageText.innerHTML = formatMessage(accumulatedMessage);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
                 readStream(); // Continúa leyendo el stream
@@ -70,6 +85,7 @@ function handleUserInput() {
         readStream();
     })
     .catch(error => {
+        console.log(error);
         botMessageText.innerHTML = "Error al recibir la respuesta.";
     });
 }
