@@ -154,7 +154,7 @@ Estos son los mensajes previos del chat:
         response_chunks = []
         for chunk in ask_gpt(message):
             response_chunks.append(chunk.decode('utf-8').replace('data: ','').strip('\n') if isinstance(chunk, bytes) else chunk)
-            yield chunk
+            yield chunk 
         
         # Guardar la respuesta completa
         full_response = ''.join(response_chunks)
